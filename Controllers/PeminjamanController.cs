@@ -11,66 +11,77 @@ namespace _2026_PinjamRuang_backend.Controllers
   {
     private readonly AppDbContext _context;
 
-    // 1. Konstruktor: Minta akses ke 'Gudang' (Database)
     public PeminjamanController(AppDbContext context)
     {
       _context = context;
     }
 
-    // 2. GET: Ambil Semua Data (Yg belum dihapus)
-    // Cara panggil: GET /api/peminjaman
+    // 1. GET: Ambil Semua Data (Yg belum dihapus)
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Peminjaman>>> GetPeminjamans()
     {
-      // Ambil semua data dari tabel Peminjamans jadi list
-      return await _context.Peminjamans.ToListAsync();
+      return await _context.Peminjamans
+          .Where(x => x.DeletedAt == null) // Filter sampah
+          .ToListAsync();
     }
 
-    // 3. GET: Ambil 1 Data berdasarkan ID
-    // Cara panggil: GET /api/peminjaman/1
+    // 2. GET: Ambil 1 Data (Cek Soft Delete juga)
     [HttpGet("{id}")]
     public async Task<ActionResult<Peminjaman>> GetPeminjaman(int id)
     {
       var peminjaman = await _context.Peminjamans.FindAsync(id);
 
-      if (peminjaman == null)
+      // Kalau gak ada ATAU udah dihapus --> Not Found
+      if (peminjaman == null || peminjaman.DeletedAt != null)
       {
-        return NotFound("Data gak ketemu bestie!");
+        // Pakai object anonim biar responnya JSON rapi
+        return NotFound(new { message = "Data gak ketemu nih!" });
       }
 
       return peminjaman;
     }
 
-    // 4. POST: Tambah Data Baru
-    // POST: api/Peminjaman
+    // 3. POST: Tambah Data (Validasi Tanggal)
     [HttpPost]
     public async Task<ActionResult<Peminjaman>> PostPeminjaman(Peminjaman peminjaman)
     {
-      // VALIDASI TAMBAHAN: Cek Tanggal Masa Lalu
+      // Validasi: Gak boleh tanggal lampau
       if (peminjaman.TanggalPeminjaman < DateTime.Now)
       {
-        return BadRequest(new { message = "Gak bisa minjem tanggal lampau, emangnya punya mesin waktu?" });
+        return BadRequest(new { message = "Gak bisa minjem tanggal lampau ya!" });
       }
 
-      // Kalau lolos, lanjut simpan
       peminjaman.CreatedAt = DateTime.UtcNow;
+      peminjaman.Status = "Pending"; // Pastikan status awal selalu Pending
+
       _context.Peminjamans.Add(peminjaman);
       await _context.SaveChangesAsync();
 
       return CreatedAtAction("GetPeminjaman", new { id = peminjaman.Id }, peminjaman);
     }
 
-    // 5. PUT: Update/Edit Data
-    // Cara panggil: PUT /api/peminjaman/1
+    // 4. PUT: Update Data (VERSI AMAN)
     [HttpPut("{id}")]
     public async Task<IActionResult> PutPeminjaman(int id, Peminjaman peminjaman)
     {
-      if (id != peminjaman.Id)
+      if (id != peminjaman.Id) return BadRequest();
+
+      // A. Ambil data aslinya dulu di database
+      var dataAsli = await _context.Peminjamans.FindAsync(id);
+
+      // B. Cek valid gak datanya
+      if (dataAsli == null || dataAsli.DeletedAt != null)
       {
-        return BadRequest();
+        return NotFound(new { message = "Data yang mau diedit gak ada!" });
       }
 
-      _context.Entry(peminjaman).State = EntityState.Modified;
+      // C. Update CUMA field yang boleh diubah
+      // (CreatedAt JANGAN disentuh!)
+      dataAsli.NamaPeminjam = peminjaman.NamaPeminjam;
+      dataAsli.Ruangan = peminjaman.Ruangan;
+      dataAsli.Keperluan = peminjaman.Keperluan;
+      dataAsli.TanggalPeminjaman = peminjaman.TanggalPeminjaman;
+      dataAsli.Status = peminjaman.Status;
 
       try
       {
@@ -78,37 +89,30 @@ namespace _2026_PinjamRuang_backend.Controllers
       }
       catch (DbUpdateConcurrencyException)
       {
-        if (!PeminjamanExists(id)) return NotFound();
-        else throw;
+        throw;
       }
-
-      return NoContent(); // Berhasil tapi gak balikin data apa2
-    }
-
-    // 6. DELETE: Hapus Data (Soft Delete)
-    // Cara panggil: DELETE /api/peminjaman/1
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> DeletePeminjaman(int id)
-    {
-      var peminjaman = await _context.Peminjamans.FindAsync(id);
-      if (peminjaman == null)
-      {
-        return NotFound();
-      }
-
-      // SOFT DELETE: Gak dihapus beneran, cuma dikasih tanggal wafat
-      peminjaman.DeletedAt = DateTime.UtcNow;
-
-      // Simpan perubahan status
-      _context.Entry(peminjaman).State = EntityState.Modified;
-      await _context.SaveChangesAsync();
 
       return NoContent();
     }
 
-    private bool PeminjamanExists(int id)
+    // 5. DELETE: Soft Delete
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeletePeminjaman(int id)
     {
-      return _context.Peminjamans.Any(e => e.Id == id);
+      var peminjaman = await _context.Peminjamans.FindAsync(id);
+
+      // Kalau udah dihapus duluan, balikin NotFound aja
+      if (peminjaman == null || peminjaman.DeletedAt != null)
+      {
+        return NotFound(new { message = "Datanya emang udah gak ada kok." });
+      }
+
+      // Cap stempel "Dihapus" (Soft Delete)
+      peminjaman.DeletedAt = DateTime.UtcNow;
+
+      await _context.SaveChangesAsync();
+
+      return NoContent();
     }
   }
 }
