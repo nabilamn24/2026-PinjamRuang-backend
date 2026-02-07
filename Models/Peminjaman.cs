@@ -1,26 +1,28 @@
-using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations; // <-- INI WAJIB BIAR SATPAMNYA MUNCUL
 
 namespace _2026_PinjamRuang_backend.Models
 {
-    public class Peminjaman
-    {
-        [Key]
-        public int Id { get; set; }
+  public class Peminjaman
+  {
+    public int Id { get; set; }
 
-        [Required]
-        public string NamaPeminjam { get; set; } = string.Empty;
+    [Required(ErrorMessage = "Waduh, Nama Peminjam wajib diisi ya!")]
+    public string NamaPeminjam { get; set; }
 
-        [Required]
-        public string Ruangan { get; set; } = string.Empty;
+    [Required(ErrorMessage = "Ruangan harus dipilih dong!")]
+    public string Ruangan { get; set; }
 
-        public DateTime TanggalPeminjaman { get; set; }
+    [Required]
+    public DateTime TanggalPeminjaman { get; set; }
 
-        public string Keperluan { get; set; } = string.Empty;
+    [Required(ErrorMessage = "Keperluan gak boleh kosong!")]
+    [MinLength(10, ErrorMessage = "Keperluan harus jelas, minimal 10 karakter ya.")]
+    public string Keperluan { get; set; }
 
-        public string Status { get; set; } = "Pending"; 
+    public string Status { get; set; } = "Pending"; // Default otomatis Pending
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        public DateTime? DeletedAt { get; set; }
-    }
+    public DateTime? DeletedAt { get; set; } // Boleh kosong (nullable)
+  }
 }

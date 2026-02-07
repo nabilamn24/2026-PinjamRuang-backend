@@ -42,15 +42,20 @@ namespace _2026_PinjamRuang_backend.Controllers
     }
 
     // 4. POST: Tambah Data Baru
-    // Cara panggil: POST /api/peminjaman (bawa data JSON)
+    // POST: api/Peminjaman
     [HttpPost]
     public async Task<ActionResult<Peminjaman>> PostPeminjaman(Peminjaman peminjaman)
     {
-      // Catat waktu pembuatan
-      peminjaman.CreatedAt = DateTime.UtcNow;
+      // VALIDASI TAMBAHAN: Cek Tanggal Masa Lalu
+      if (peminjaman.TanggalPeminjaman < DateTime.Now)
+      {
+        return BadRequest(new { message = "Gak bisa minjem tanggal lampau, emangnya punya mesin waktu?" });
+      }
 
-      _context.Peminjamans.Add(peminjaman); // Masukin ke antrian
-      await _context.SaveChangesAsync(); // Simpan permanen ke SQL
+      // Kalau lolos, lanjut simpan
+      peminjaman.CreatedAt = DateTime.UtcNow;
+      _context.Peminjamans.Add(peminjaman);
+      await _context.SaveChangesAsync();
 
       return CreatedAtAction("GetPeminjaman", new { id = peminjaman.Id }, peminjaman);
     }
