@@ -1,18 +1,24 @@
 using Microsoft.EntityFrameworkCore;
 using _2026_PinjamRuang_backend.Data;
-// Kalau ada using lain bawaan, biarin di sini juga
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// 1. Daftarkan DbContext ke SQL Server (Ini yang tadi kita tambah)
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowReactApp",
+        policy =>
+        {
+            policy.WithOrigins("http://localhost:5173") // Pastiin port frontend bener 5173
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        });
+});
+
+// 2. Database & Controller
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// 2. Daftarkan Controller (Biar API jalan)
 builder.Services.AddControllers();
-
-// 3. Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -26,6 +32,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors("AllowReactApp");
 
 app.UseAuthorization();
 
