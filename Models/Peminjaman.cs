@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations; // <-- INI WAJIB BIAR SATPAMNYA MUNCUL
+using System.ComponentModel.DataAnnotations;
 
 namespace _2026_PinjamRuang_backend.Models
 {

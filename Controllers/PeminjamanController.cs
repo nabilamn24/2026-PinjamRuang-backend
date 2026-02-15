@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using _2026_PinjamRuang_backend.Data;
 using _2026_PinjamRuang_backend.Models;
-using _2026_PinjamRuang_backend.DTOs; // <--- Jangan lupa ini!
+using _2026_PinjamRuang_backend.DTOs;
 
 namespace _2026_PinjamRuang_backend.Controllers
 {
@@ -118,7 +118,7 @@ namespace _2026_PinjamRuang_backend.Controllers
       dataAsli.Keperluan = input.Keperluan;
       dataAsli.TanggalPeminjaman = input.TanggalPeminjaman;
 
-      // 👇 TAMBAHIN INI (Biar Statusnya ikut ke-update)
+      // Biar Statusnya ikut ke-update
       if (!string.IsNullOrEmpty(input.Status))
       {
         dataAsli.Status = input.Status;
